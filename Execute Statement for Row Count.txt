@@ -1,0 +1,3 @@
+/*if both the tables are already present in the database then we can use the below statement directly as there is no need to run the bulk insert */
+/*Check row count procedure has to be made first*/
+execute CheckRowCount @SrcTbl='[Source Database].Table_name_Src',@DestTbl='[Target Database].Table_name_trg'

@@ -1,0 +1,161 @@
+/*Result table*/
+use Database_name
+
+create table results(
+SrcTbl nvarchar(100),
+SrcTblCnt Bigint,
+DestTbl nvarchar(100),
+DestTblCnt bigint,
+Result nvarchar(10),
+CheckTime datetime
+)
+
+
+
+****
+Create PROCEDURE CheckRowCount @SrcTbl nvarchar(100), @DestTbl nvarchar(100)
+AS
+BEGIN
+ DECLARE @SrcCnt bigint
+ DECLARE @destCnt bigint
+ DECLARE @Result nvarchar(10)
+ DECLARE @ActualSrc nvarchar(10)
+ DECLARE @ActualDest nvarchar(10)
+ DECLARE @Sql nvarchar(max)
+ SET @Result='NOT MATCHED'
+ set @sql='use FP3_FIX_Src'
+ exec(@sql)
+ IF EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='Scnt')
+ BEGIN
+  DROP TABLE Scnt
+ END
+ set @sql='SELECT COUNT(*) AS a INTO Scnt FROM '+@SrcTbl+ ';'
+ EXEC(@sql)
+
+ SELECT @SrcCnt=a FROM Scnt
+ set @sql='use FP3_FIX_Trg'
+ exec(@sql)
+ IF EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='Dcnt')
+ BEGIN
+  DROP TABLE Dcnt
+ END
+
+ set @sql='SELECT COUNT(*) AS a INTO Dcnt FROM '+@DestTbl+ ';'
+ EXEC(@sql)
+
+ SELECT @destCnt=a FROM Dcnt
+
+ IF @SrcCnt=@destCnt
+ BEGIN
+  SET @Result='MATCH'
+ END
+
+ set @sql='use EYDB'
+ exec(@sql)
+
+
+ INSERT INTO [EYDB].[dbo].[FP3_FIXRes]
+ SELECT @SrcTbl,@SrcCnt,@DestTbl,@destCnt,@Result,CURRENT_TIMESTAMP
+
+ 
+
+END;
+go
+****
+
+execute CheckRowCount @SrcTbl='[EYSource].',@DestTbl='[TEST_EYDB].[FINWARE].[TD_ACCT_LEDG_PURGE]'
+
+*****
+Create procedure CopyNCheck_FP3_FIX @DestTable as nvarchar(max)
+as
+begin
+
+Declare @sql nvarchar(max)
+declare @SourceTbl nvarchar(max)
+set @SourceTbl=parsename(@DestTable,1)+'_src'
+set @sql='Use FP3_FIX_Src'
+--creating table structure
+
+IF EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME=@SourceTbl)
+ BEGIN
+ set @sql= 'DROP TABLE '+@SourceTbl+';'
+ exec(@sql)
+ print 'Dropped '+@SourceTbl
+ END
+
+--set @sql='select top 1000 * into ['+parsename(@DestTable,1)+'_Src] from ' + @DestTable + ';'
+--print @sql
+--exec(@sql)
+
+--set @sql='delete  from [' + parsename(@DestTable,1)+'_Src];'
+--exec(@sql)
+
+set @sql='CreateTbl @tblName='''+parsename(@DestTable,1)+''''
+print @sql
+exec(@sql)
+
+
+set @sql='Bulk insert ['+parsename(@DestTable,1)+'_Src] FROM ''G:\FP3_FIX\'+parsename(@DestTable,1)+'.txt''' +' WITH(
+FIELDTERMINATOR = ''$|$'',
+ROWTERMINATOR = ''\n'',
+MAXERRORS = 1000
+)'
+print @sql
+exec(@sql)
+
+set @sql='Use FP3_FIX_Src'
+exec(@sql)
+set @sql='CheckRowCount @SrcTbl=''[FP3_FIX_Src].[dbo].['+parsename(@DestTable,1)+'_Src]'',@DestTbl=''[FP3_FIX_Trg].[FINWARE].['+parsename(@DestTable,1)+']'''
+print @sql
+exec(@sql)
+end;
+go
+*****
+execute CopyNCheck_finlive @DestTable='[TEST_EYDB].[FINWARE].[ts_tds_remit_purge]'
+
+
+--CREATE PROCEDURE RUNCODE 
+--as
+--begin
+/*Query to run the procedure*/
+
+Declare @row int
+Declare @sql nvarchar(max)
+declare @TblName nvarchar(255)
+select @row=1
+Use FP3_FIX_Trg
+exec(@sql)
+while(@row <= (select count(*) from [RunningTbl]))
+begin
+Use FP3_FIX_Trg
+
+select @TblName=(select [TABLE_NAME] from FP3_FIX_Trg.[dbo].[RunningTbl] where RowNum=@row)
+Print @TblName
+Use FP3_FIX_Src
+
+set @sql= 'CopyNCheck_FP3_FIX @DestTable=''[FP3_FIX_Trg].[FINWARE].['+ @TblName+']'''
+print @sql
+exec(@sql)
+select @row=@row+1
+Use FP3_FIX_Trg
+end;
+go
+
+
+---select top 10 *,row_number() over (order by len([TABLE_NAME]) desc) as RowNum into RunningTbl from [TEST_EYDB].[dbo].[MetaTable]
+
+/*Query to input N tables into a temporary table*/
+
+select * from runningtbl
+/*Below code is for creating new running table*/
+USE FP3_FIX_Trg
+drop table runningtbl
+--drop table ST_INSTR_ISSUED_src
+SELECT *,row_number() over (order by ([TABLE_NAME])) as RowNum INTO RUNNINGTBL
+from INFORMATION_SCHEMA.TABLES
+where TABLE_NAME in 
+( 
+'Table name',
+'table name'
+)
+
