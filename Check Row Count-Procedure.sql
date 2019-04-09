@@ -25,7 +25,7 @@ BEGIN
  EXEC(@sql)
 
  SELECT @SrcCnt=a FROM Scnt
- set @sql='use FP8_Trg'
+ set @sql='use db_Trg'
  exec(@sql)
  IF EXISTS(SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='Dcnt')
  BEGIN
@@ -46,7 +46,7 @@ BEGIN
  exec(@sql)
 
 
- INSERT INTO [EYDB].[dbo].[FP8Res]
+ INSERT INTO [dbo].[dbRes]
  SELECT @SrcTbl,@SrcCnt,@DestTbl,@destCnt,@Result,CURRENT_TIMESTAMP
 
  
