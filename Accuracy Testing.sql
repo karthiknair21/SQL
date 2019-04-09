@@ -16,7 +16,7 @@ group by column_name
 /*inner join of both the tables*/
 select a.column_name,
 abs(a.Amount_Column- b.Amount_Column) as dif_Amount_Column
-into eydb.dbo.FP3_FIX_TD_AUDIT_TRAIL_TEMP_Accuracy
+into dbo.table_name
 from Table_Name_accuracy_Src a
 inner join Table_Name_accuracy_Trg b
 on a.column_name=b.column_name
