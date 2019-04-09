@@ -1,22 +1,22 @@
 select 
 TABLE_name, count(*)
-from FP4_trg
+from db_trg
 group by TABLE_name
 
 select 
 TABLE_name, count(*)
-from FP4_Src
+from db_Src
 group by TABLE_name
 
 
 
 select TABLE_name,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,NUMERIC_PRECISION
-into FP4_Src
+into db_Src
 from INFORMATION_SCHEMA.COLUMNS
-where TABLE_NAME like 'FP4%'
+where TABLE_NAME like 'db%'
 
 
 select TABLE_name,COLUMN_NAME,DATA_TYPE,CHARACTER_MAXIMUM_LENGTH,NUMERIC_PRECISION
-into FP4_trg
+into db_trg
 from INFORMATION_SCHEMA.COLUMNS
-where TABLE_NAME like 'FP4%'
+where TABLE_NAME like 'db%'
